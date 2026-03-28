@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword } from '@/lib/auth/jwt';
+import { hash } from 'bcryptjs';
 
 // الحسابات التجريبية
 const DEMO_ACCOUNTS = [
@@ -61,8 +61,9 @@ export async function GET() {
     }
 
     // تشفير كلمات المرور
-    const hashedPassword = await hashPassword('Demo@123456');
-    const hashedAdminPassword = await hashPassword('Admin@123456');
+    const salt = await hash('Demo@123456', 12);
+    const hashedPassword = salt;
+    const hashedAdminPassword = await hash('Admin@123456', 12);
 
     // إنشاء المستخدمين التجريبيين
     const users = await Promise.all([
