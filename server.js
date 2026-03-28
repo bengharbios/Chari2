@@ -1,25 +1,30 @@
 #!/usr/bin/env node
+const { spawn } = require('child_process');
 const path = require('path');
 
-// Set env
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+// Set production environment
+process.env.NODE_ENV = 'production';
+process.env.PORT = process.env.PORT || 3000;
+process.env.HOSTNAME = '0.0.0.0';
 
-// Try standalone first
-const standalonePath = path.join(__dirname, '.next', 'standalone', 'server.js');
-const fs = require('fs');
+console.log('🚀 Starting TakZone...');
+console.log(`📍 Port: ${process.env.PORT}`);
+console.log(`📍 Node: ${process.version}`);
 
-if (fs.existsSync(standalonePath)) {
-  // Change working directory to standalone folder
-  process.chdir(path.join(__dirname, '.next', 'standalone'));
-  // Set the correct port
-  process.env.PORT = process.env.PORT || 3000;
-  process.env.HOSTNAME = '0.0.0.0';
-  require(standalonePath);
-} else {
-  // Fallback to next start
-  const { execSync } = require('child_process');
-  execSync(`npx next start -p ${process.env.PORT || 3000}`, {
-    stdio: 'inherit',
-    env: { ...process.env, HOSTNAME: '0.0.0.0' }
-  });
-}
+// Start Next.js
+const nextProcess = spawn('npx', ['next', 'start'], {
+  cwd: __dirname,
+  stdio: 'inherit',
+  env: process.env,
+  shell: true
+});
+
+nextProcess.on('error', (err) => {
+  console.error('❌ Failed to start:', err);
+  process.exit(1);
+});
+
+nextProcess.on('close', (code) => {
+  console.log(`Server closed with code: ${code}`);
+  process.exit(code || 0);
+});
