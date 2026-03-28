@@ -4,20 +4,33 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
+function createPrismaClient() {
+  try {
+    return new PrismaClient({
+      log: ['error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
       },
-    },
-  })
+    })
+  } catch (error) {
+    console.error('Failed to create Prisma client:', error)
+    throw error
+  }
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+export const db = globalForPrisma.prisma ?? createPrismaClient()
 
-// Handle cleanup on shutdown
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = db
+}
+
+// Graceful shutdown
 process.on('beforeExit', async () => {
-  await db.$disconnect()
+  try {
+    await db.$disconnect()
+  } catch (e) {
+    // Ignore disconnect errors
+  }
 })
