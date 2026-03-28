@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { comparePassword, generateAccessToken, generateRefreshToken, setAuthCookies } from '@/lib/auth/jwt';
+import { comparePassword, generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt';
 
 export async function POST(request: NextRequest) {
   try {
