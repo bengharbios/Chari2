@@ -127,10 +127,7 @@ export default function LoginPage() {
   const handleDemoLogin = async (account: typeof DEMO_ACCOUNTS[0]) => {
     setDemoLoading(account.type);
     try {
-      // أولاً تهيئة البيانات التجريبية
-      await fetch('/api/seed/demo-users');
-      
-      // ثم تسجيل الدخول
+      // تسجيل الدخول مباشرة (الحسابات التجريبية موجودة مسبقاً)
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

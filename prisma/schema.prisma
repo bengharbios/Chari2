@@ -11,7 +11,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -86,7 +86,7 @@ model Session {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  userAgent String?  
+  userAgent String?  @db.VarChar(500)
   ipAddress String?
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -115,7 +115,7 @@ model AdminProfile {
   id          String   @id @default(cuid())
   userId      String   @unique
   role        AdminRole @default(OPERATIONS_MANAGER)
-  permissions String     // JSON string of permissions
+  permissions String   @db.Text  // JSON string of permissions
   department  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -150,8 +150,8 @@ model MerchantProfile {
   bankAccountNumber   String?
   iban                String?
   verificationStatus  VerificationStatus @default(PENDING)
-  verificationData    String?   // JSON for KYB data
-  verificationNotes   String?  
+  verificationData    String?  @db.Text // JSON for KYB data
+  verificationNotes   String?  @db.Text
   subscriptionId      String?
   subscriptionPlan    PlanType @default(FREE)
   productsLimit       Int      @default(10)
@@ -178,7 +178,7 @@ model MerchantDocument {
   id              String   @id @default(cuid())
   merchantId      String
   documentType    DocumentType
-  documentUrl     String    
+  documentUrl     String    @db.VarChar(500)
   verificationStatus VerificationStatus @default(PENDING)
   uploadedAt      DateTime @default(now())
   
@@ -193,15 +193,15 @@ model Store {
   storeName           String
   storeNameEn         String?
   slug                String   @unique
-  logo                String?  
-  coverImage          String?  
-  description         String?  
-  descriptionEn       String?  
-  theme               String?   // JSON for theme settings
-  socialLinks         String?   // JSON for social media links
+  logo                String?  @db.VarChar(500)
+  coverImage          String?  @db.VarChar(500)
+  description         String?  @db.Text
+  descriptionEn       String?  @db.Text
+  theme               String?  @db.Text // JSON for theme settings
+  socialLinks         String?  @db.Text // JSON for social media links
   verificationStatus  VerificationStatus @default(PENDING)
-  verificationData    String?   // JSON for KYB including liveness
-  verificationNotes   String?  
+  verificationData    String?  @db.Text // JSON for KYB including liveness
+  verificationNotes   String?  @db.Text
   subscriptionId      String?
   subscriptionPlan    PlanType @default(FREE)
   productsLimit       Int      @default(50)
@@ -230,7 +230,7 @@ model StoreCustomization {
   id        String   @id @default(cuid())
   storeId   String
   key       String
-  value     String    // JSON value
+  value     String   @db.Text // JSON value
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -254,7 +254,7 @@ model Address {
   floorNo     String?
   apartmentNo String?
   postalCode  String?
-  additionalInstructions String? 
+  additionalInstructions String? @db.Text
   isDefault   Boolean  @default(false)
   latitude    Float?
   longitude   Float?
@@ -277,8 +277,8 @@ model Category {
   nameAr      String
   nameEn      String?
   slug        String   @unique
-  description String?  
-  image       String?  
+  description String?  @db.Text
+  image       String?  @db.VarChar(500)
   icon        String?
   parentId    String?
   sortOrder   Int      @default(0)
@@ -318,8 +318,8 @@ model Brand {
   nameAr      String
   nameEn      String?
   slug        String   @unique
-  logo        String?  
-  description String?  
+  logo        String?  @db.VarChar(500)
+  description String?  @db.Text
   isActive    Boolean  @default(true)
   isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -339,9 +339,9 @@ model Product {
   nameAr          String
   nameEn          String?
   slug            String   @unique
-  description     String?  
-  descriptionEn   String?  
-  highlights      String?   // JSON array of key points
+  description     String?  @db.Text
+  descriptionEn   String?  @db.Text
+  highlights      String?  @db.Text // JSON array of key points
   categoryId      String
   brandId         String?
   merchantId      String?  // for independent merchants
@@ -362,16 +362,16 @@ model Product {
   length          Float?   // بالسنتيمتر
   width           Float?
   height          Float?
-  shippingCities  String?   // JSON array of cities
+  shippingCities  String?  @db.Text // JSON array of cities
   
   // الفيديو والصور
-  images          String    // JSON array of image URLs
-  videoUrl        String?  
+  images          String   @db.Text // JSON array of image URLs
+  videoUrl        String?  @db.VarChar(500)
   
   // SEO
   metaTitle       String?
-  metaDescription String?  
-  metaKeywords    String?  
+  metaDescription String?  @db.Text
+  metaKeywords    String?  @db.VarChar(500)
   
   // الحالة
   status          ProductStatus @default(DRAFT)
@@ -420,7 +420,7 @@ model ProductVariant {
   colorCode       String?
   size            String?
   packageSize     String?
-  customAttributes String?  // JSON for other attributes
+  customAttributes String? @db.Text // JSON for other attributes
   
   // التسعير والمخزون
   price           Float
@@ -428,7 +428,7 @@ model ProductVariant {
   stock           Int      @default(0)
   
   // الصور
-  images          String?   // JSON array
+  images          String?  @db.Text // JSON array
   
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -497,8 +497,8 @@ model Order {
   updatedAt       DateTime @updatedAt
   
   // ملاحظات
-  notes           String?  
-  cancellationReason String? 
+  notes           String?  @db.Text
+  cancellationReason String? @db.Text
   
   // العلاقات
   buyer           User     @relation("BuyerOrders", fields: [buyerId], references: [id])
@@ -536,7 +536,7 @@ model OrderTracking {
   id          String   @id @default(cuid())
   orderId     String
   status      String
-  description String   
+  description String   @db.Text
   location    String?
   createdAt   DateTime @default(now())
   
@@ -553,7 +553,7 @@ model Payment {
   status          PaymentStatus @default(PENDING)
   transactionId   String?
   paymentGateway  String?
-  gatewayResponse String?  
+  gatewayResponse String?  @db.Text
   paidAt          DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -628,8 +628,8 @@ model Coupon {
   startDate       DateTime
   endDate         DateTime
   isActive        Boolean  @default(true)
-  applicableCategories String?  // JSON array
-  applicableProducts String?  // JSON array
+  applicableCategories String? @db.Text // JSON array
+  applicableProducts String? @db.Text // JSON array
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -678,8 +678,8 @@ model Review {
   productId   String
   rating      Int      // 1-5
   title       String?
-  comment     String?  
-  images      String?   // JSON array
+  comment     String?  @db.Text
+  images      String?  @db.Text // JSON array
   isVerified  Boolean  @default(false)
   isApproved  Boolean  @default(true)
   helpfulCount Int     @default(0)
@@ -707,14 +707,12 @@ model SubscriptionPlan {
   priceYearly         Float
   productsLimit       Int
   commissionRate      Float
-  features            String    // JSON
+  features            String   @db.Text // JSON
   isFeatured          Boolean  @default(false)
   isActive            Boolean  @default(true)
   sortOrder           Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
-  
-  subscriptions       Subscription[]
   
   @@map("subscription_plans")
 }
@@ -749,7 +747,7 @@ model Settlement {
   status          SettlementStatus @default(PENDING)
   paidAt          DateTime?
   paymentReference String?
-  reportUrl       String?  
+  reportUrl       String?  @db.VarChar(500)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -772,7 +770,7 @@ model HomepageSection {
   titleEn     String?
   isVisible   Boolean  @default(true)
   sortOrder   Int      @default(0)
-  config      String?   // JSON for section-specific settings
+  config      String?  @db.Text // JSON for section-specific settings
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -804,9 +802,9 @@ model HomepageBanner {
   titleEn     String?
   subtitleAr  String?
   subtitleEn  String?
-  imageAr     String   
-  imageEn     String?  
-  linkUrl     String?  
+  imageAr     String   @db.VarChar(500)
+  imageEn     String?  @db.VarChar(500)
+  linkUrl     String?  @db.VarChar(500)
   buttonTextAr String?
   buttonTextEn String?
   sortOrder   Int      @default(0)
@@ -825,9 +823,9 @@ model HomepageSlider {
   titleEn     String?
   subtitleAr  String?
   subtitleEn  String?
-  imageAr     String   
-  imageEn     String?  
-  linkUrl     String?  
+  imageAr     String   @db.VarChar(500)
+  imageEn     String?  @db.VarChar(500)
+  linkUrl     String?  @db.VarChar(500)
   buttonTextAr String?
   buttonTextEn String?
   sortOrder   Int      @default(0)
@@ -849,8 +847,8 @@ model Notification {
   userId      String
   type        NotificationType
   title       String
-  message     String   
-  data        String?   // JSON
+  message     String   @db.Text
+  data        String?  @db.Text // JSON
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
   
@@ -864,7 +862,7 @@ model SupportTicket {
   id          String   @id @default(cuid())
   userId      String
   subject     String
-  message     String   
+  message     String   @db.Text
   status      TicketStatus @default(OPEN)
   priority    TicketPriority @default(MEDIUM)
   createdAt   DateTime @default(now())
@@ -882,8 +880,8 @@ model TicketReply {
   ticketId    String
   userId      String?
   adminId     String?
-  message     String   
-  attachments String?   // JSON array
+  message     String   @db.Text
+  attachments String?  @db.Text // JSON array
   createdAt   DateTime @default(now())
   
   ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -897,10 +895,10 @@ model AuditLog {
   action      String
   entityType  String
   entityId    String?
-  oldValue    String?  
-  newValue    String?  
+  oldValue    String?  @db.Text
+  newValue    String?  @db.Text
   ipAddress   String?
-  userAgent   String?  
+  userAgent   String?  @db.VarChar(500)
   createdAt   DateTime @default(now())
   
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -913,7 +911,7 @@ model AuditLog {
 model Setting {
   id          String   @id @default(cuid())
   key         String   @unique
-  value       String   
+  value       String   @db.Text
   type        String   @default("string")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
