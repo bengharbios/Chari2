@@ -1,11 +1,16 @@
 /**
  * API تسجيل الدخول
  * Login API Route
+ * 
+ * Enhanced with retry logic for database connection resilience
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, withRetry } from '@/lib/db';
 import { comparePassword, generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,16 +33,26 @@ export async function POST(request: NextRequest) {
       formattedPhone = '0' + formattedPhone.slice(3);
     }
 
-    // البحث عن المستخدم
-    const user = await db.user.findUnique({
-      where: { phone: formattedPhone },
-      include: {
-        buyerProfile: true,
-        merchantProfile: true,
-        store: true,
-        adminProfile: true,
-      },
-    });
+    // البحث عن المستخدم مع retry
+    const user = await withRetry(async () => {
+      return db.user.findUnique({
+        where: { phone: formattedPhone },
+        select: {
+          id: true,
+          phone: true,
+          password: true,
+          name: true,
+          email: true,
+          userType: true,
+          avatar: true,
+          status: true,
+          buyerProfile: true,
+          merchantProfile: true,
+          store: true,
+          adminProfile: true,
+        },
+      });
+    }, 3, 500);
 
     if (!user) {
       return NextResponse.json(
@@ -79,22 +94,26 @@ export async function POST(request: NextRequest) {
 
     // إنشاء التوكنات
     const accessToken = await generateAccessToken(user.id, user.userType);
-    const { token: refreshToken, tokenId } = await generateRefreshToken(user.id);
+    const { token: refreshToken } = await generateRefreshToken(user.id);
 
-    // حفظ الـ Refresh Token في قاعدة البيانات
-    await db.refreshToken.create({
-      data: {
-        userId: user.id,
-        token: refreshToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 يوم
-      },
-    });
+    // حفظ الـ Refresh Token في قاعدة البيانات مع retry
+    await withRetry(async () => {
+      return db.refreshToken.create({
+        data: {
+          userId: user.id,
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 يوم
+        },
+      });
+    }, 3, 500);
 
-    // تحديث آخر تسجيل دخول
-    await db.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    // تحديث آخر تسجيل دخول مع retry
+    await withRetry(async () => {
+      return db.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+    }, 3, 500);
 
     // إنشاء الاستجابة مع الكعكات
     const response = NextResponse.json({
@@ -129,8 +148,17 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+    
+    // Check if it's a database connection error
+    if (error?.code === 'P1001' || error?.code === 'P1002' || error?.code === 'P1008') {
+      return NextResponse.json(
+        { error: 'خدمة قاعدة البيانات غير متاحة مؤقتاً، يرجى المحاولة مرة أخرى' },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'حدث خطأ أثناء تسجيل الدخول' },
       { status: 500 }
