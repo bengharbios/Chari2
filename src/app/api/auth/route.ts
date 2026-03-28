@@ -7,7 +7,16 @@ import { NextRequest } from 'next/server';
 import { sendOTPSchema, verifyOTPSchema, registerSchema, loginSchema } from '@/lib/validators';
 import { createOTP, verifyOTPAndGetUser, sendOTPViaWhatsApp } from '@/lib/services';
 import { db } from '@/lib/db';
-import { generateAccessToken, generateRefreshToken, toAuthUser, AuthResponses, getUserFromRequest } from '@/lib/auth';
+import { 
+  generateAccessToken, 
+  generateRefreshToken, 
+  createSession,
+  transformUserToResponse, 
+  toAuthUser, 
+  AuthResponses, 
+  getUserFromRequest,
+  setAuthCookies
+} from '@/lib/auth';
 import { hash, compare } from 'bcryptjs';
 import { OTPType } from '@prisma/client';
 
@@ -87,9 +96,9 @@ export async function verifyOTPHandler(request: NextRequest) {
       },
     });
     
-    // Generate tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    // Create session and get tokens
+    const { session, accessToken } = await createSession(user.id);
+    const { token: refreshToken } = await generateRefreshToken(user.id);
     
     // Store refresh token
     await db.refreshToken.create({
@@ -102,7 +111,7 @@ export async function verifyOTPHandler(request: NextRequest) {
     
     return Response.json({
       success: true,
-      user: toAuthUser(user),
+      user: transformUserToResponse(user),
       accessToken,
       refreshToken,
     });
@@ -203,9 +212,9 @@ export async function loginHandler(request: NextRequest) {
       return AuthResponses.error('تم تعليق حسابك. يرجى التواصل مع الدعم الفني');
     }
     
-    // Generate tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    // Create session and get tokens
+    const { session, accessToken } = await createSession(user.id);
+    const { token: refreshToken } = await generateRefreshToken(user.id);
     
     // Store refresh token
     await db.refreshToken.create({
@@ -224,7 +233,7 @@ export async function loginHandler(request: NextRequest) {
     
     return Response.json({
       success: true,
-      user: toAuthUser(user),
+      user: transformUserToResponse(user),
       accessToken,
       refreshToken,
     });

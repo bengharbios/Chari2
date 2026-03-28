@@ -49,3 +49,8 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Sensitive deployment files
+DEPLOYMENT.md
+worklog.md
+*.production.env

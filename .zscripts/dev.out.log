@@ -4255,3 +4255,23 @@ Checked 850 installs across 918 packages (no changes) [41.00ms]
 $ prisma db push
 Failed to load config file "/home/z/my-project" as a TypeScript/JavaScript module. Error: Error: ENOTDIR: not a directory, lstat '/home/z/my-project/.config/prisma'
 error: script "db:push" exited with code 1
+==========================================
+[2026-03-28 10:10:55] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.10ms] ".env"
+bun install v1.3.10 (30e609e0)
+
+Checked 850 installs across 918 packages (no changes) [43.00ms]
+==========================================
+[2026-03-28 10:10:55] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-03-28 10:10:55] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push
+Failed to load config file "/home/z/my-project" as a TypeScript/JavaScript module. Error: Error: ENOTDIR: not a directory, lstat '/home/z/my-project/.config/prisma'
+error: script "db:push" exited with code 1

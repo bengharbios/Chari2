@@ -7,7 +7,6 @@
 import { db } from '../db';
 import { Order, OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { CreateOrderInput, OrderQueryInput } from '../validators';
-import { generateOrderNumber } from '../utils';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -20,7 +19,7 @@ export interface PaginatedResult<T> {
 /**
  * Generate unique order number
  */
-export function generateOrderNumber(): string {
+function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `ORD-${timestamp}-${random}`;

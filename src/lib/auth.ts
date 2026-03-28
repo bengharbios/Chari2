@@ -462,6 +462,12 @@ export function transformUserToResponse(user: User): UserResponse {
 }
 
 /**
+ * تحويل المستخدم إلى AuthUser (alias)
+ * Transform user to AuthUser
+ */
+export const toAuthUser = transformUserToResponse;
+
+/**
  * الحصول على المستخدم الحالي
  * Get current user
  */
