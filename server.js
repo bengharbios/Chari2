@@ -1,24 +1,25 @@
 #!/usr/bin/env node
-const { createServer } = require('http');
+const { spawn } = require('child_process');
 const path = require('path');
+
+process.env.NODE_ENV = 'production';
+process.env.PORT = process.env.PORT || 3000;
+
+const standalonePath = path.join(__dirname, '.next', 'standalone', 'server.js');
 const fs = require('fs');
 
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
-const PORT = process.env.PORT || 3000;
-const HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
-
-const standaloneDir = path.join(__dirname, '.next', 'standalone');
-
-if (fs.existsSync(path.join(standaloneDir, 'server.js'))) {
-  process.chdir(standaloneDir);
-  require('./server.js');
+if (fs.existsSync(standalonePath)) {
+  process.chdir(path.join(__dirname, '.next', 'standalone'));
+  require(standalonePath);
 } else {
-  const http = require('http');
-  const server = http.createServer((req, res) => {
-    res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('<h1>Building...</h1><p>Please wait or redeploy.</p>');
+  const nextProcess = spawn('npx', ['next', 'start'], {
+    stdio: 'inherit',
+    env: process.env,
+    shell: true
   });
-  server.listen(PORT, HOSTNAME, () => {
-    console.log(`Fallback server on ${HOSTNAME}:${PORT}`);
+  
+  nextProcess.on('error', (err) => {
+    console.error('Server error:', err);
+    process.exit(1);
   });
 }
