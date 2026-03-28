@@ -1,0 +1,420 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   RTL Cairo Design System - Noon-Inspired
+   ============================================ */
+
+@theme inline {
+  /* Font System */
+  --font-sans: var(--font-cairo);
+  --font-cairo: var(--font-cairo);
+  
+  /* Base Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  /* Card Colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  /* Popover Colors */
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  
+  /* Primary - Noon Green */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  /* Secondary */
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  /* Muted */
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  /* Accent - Orange for Offers */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  /* Destructive - Error Red */
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  /* Status Colors */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  
+  /* Border & Input */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Chart Colors - Noon-inspired palette */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================
+   Light Mode - Noon-Inspired Colors
+   ============================================ */
+:root {
+  /* Radius */
+  --radius: 0.75rem;
+  
+  /* Background & Foreground */
+  --background: #FFFFFF;
+  --foreground: #1A1A1A;
+  
+  /* Card */
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  
+  /* Popover */
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  
+  /* Primary - Noon Green */
+  --primary: #00A651;
+  --primary-foreground: #FFFFFF;
+  
+  /* Secondary - Light Gray */
+  --secondary: #F5F5F5;
+  --secondary-foreground: #1A1A1A;
+  
+  /* Muted */
+  --muted: #F5F5F5;
+  --muted-foreground: #6B6B6B;
+  
+  /* Accent - Orange for Offers/Promotions */
+  --accent: #F7941D;
+  --accent-foreground: #FFFFFF;
+  
+  /* Destructive - Error Red */
+  --destructive: #E53935;
+  --destructive-foreground: #FFFFFF;
+  
+  /* Status Colors */
+  --success: #43A047;
+  --success-foreground: #FFFFFF;
+  --warning: #FB8C00;
+  --warning-foreground: #FFFFFF;
+  --info: #00ACC1;
+  --info-foreground: #FFFFFF;
+  
+  /* Border & Input */
+  --border: #E5E5E5;
+  --input: #E5E5E5;
+  --ring: #00A651;
+  
+  /* Chart Colors - Noon-inspired */
+  --chart-1: #00A651;
+  --chart-2: #F7941D;
+  --chart-3: #43A047;
+  --chart-4: #00ACC1;
+  --chart-5: #FB8C00;
+  
+  /* Sidebar */
+  --sidebar: #FAFAFA;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #00A651;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F5F5F5;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #E5E5E5;
+  --sidebar-ring: #00A651;
+}
+
+/* ============================================
+   Dark Mode - Noon-Inspired Colors
+   ============================================ */
+.dark {
+  /* Background & Foreground */
+  --background: #121212;
+  --foreground: #FAFAFA;
+  
+  /* Card */
+  --card: #1E1E1E;
+  --card-foreground: #FAFAFA;
+  
+  /* Popover */
+  --popover: #1E1E1E;
+  --popover-foreground: #FAFAFA;
+  
+  /* Primary - Brighter Green for Dark Mode */
+  --primary: #00C853;
+  --primary-foreground: #121212;
+  
+  /* Secondary */
+  --secondary: #2A2A2A;
+  --secondary-foreground: #FAFAFA;
+  
+  /* Muted */
+  --muted: #2A2A2A;
+  --muted-foreground: #A0A0A0;
+  
+  /* Accent - Brighter Orange */
+  --accent: #FFA726;
+  --accent-foreground: #121212;
+  
+  /* Destructive */
+  --destructive: #EF5350;
+  --destructive-foreground: #FFFFFF;
+  
+  /* Status Colors */
+  --success: #66BB6A;
+  --success-foreground: #121212;
+  --warning: #FFA726;
+  --warning-foreground: #121212;
+  --info: #26C6DA;
+  --info-foreground: #121212;
+  
+  /* Border & Input */
+  --border: #333333;
+  --input: #333333;
+  --ring: #00C853;
+  
+  /* Chart Colors - Brighter for Dark Mode */
+  --chart-1: #00C853;
+  --chart-2: #FFA726;
+  --chart-3: #66BB6A;
+  --chart-4: #26C6DA;
+  --chart-5: #FFB74D;
+  
+  /* Sidebar */
+  --sidebar: #1A1A1A;
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #00C853;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-accent: #2A2A2A;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #333333;
+  --sidebar-ring: #00C853;
+}
+
+/* ============================================
+   Base Layer Styles
+   ============================================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-cairo), system-ui, sans-serif;
+  }
+  
+  /* RTL Typography */
+  html[dir="rtl"] {
+    font-feature-settings: "ss01", "ss02";
+  }
+  
+  /* Arabic text optimization */
+  :lang(ar) {
+    line-height: 1.8;
+    letter-spacing: 0;
+  }
+}
+
+/* ============================================
+   RTL Utilities
+   ============================================ */
+@layer utilities {
+  /* RTL-aware spacing */
+  .space-rtl-4 > * + * {
+    margin-inline-start: 1rem;
+  }
+  
+  .space-rtl-2 > * + * {
+    margin-inline-start: 0.5rem;
+  }
+  
+  /* RTL-aware flex */
+  .flex-rtl {
+    display: flex;
+    flex-direction: row-reverse;
+  }
+  
+  /* RTL-aware text alignment */
+  .text-start-rtl {
+    text-align: start;
+  }
+  
+  .text-end-rtl {
+    text-align: end;
+  }
+  
+  /* RTL-aware borders */
+  .border-start-rtl {
+    border-inline-start-width: 1px;
+  }
+  
+  .border-end-rtl {
+    border-inline-end-width: 1px;
+  }
+  
+  /* RTL-aware rounded corners */
+  .rounded-start-rtl {
+    border-start-start-radius: var(--radius);
+    border-end-start-radius: var(--radius);
+  }
+  
+  .rounded-end-rtl {
+    border-start-end-radius: var(--radius);
+    border-end-end-radius: var(--radius);
+  }
+  
+  /* Logical properties for RTL */
+  .ms-rtl-1 { margin-inline-start: 0.25rem; }
+  .ms-rtl-2 { margin-inline-start: 0.5rem; }
+  .ms-rtl-3 { margin-inline-start: 0.75rem; }
+  .ms-rtl-4 { margin-inline-start: 1rem; }
+  
+  .me-rtl-1 { margin-inline-end: 0.25rem; }
+  .me-rtl-2 { margin-inline-end: 0.5rem; }
+  .me-rtl-3 { margin-inline-end: 0.75rem; }
+  .me-rtl-4 { margin-inline-end: 1rem; }
+  
+  .ps-rtl-1 { padding-inline-start: 0.25rem; }
+  .ps-rtl-2 { padding-inline-start: 0.5rem; }
+  .ps-rtl-3 { padding-inline-start: 0.75rem; }
+  .ps-rtl-4 { padding-inline-start: 1rem; }
+  
+  .pe-rtl-1 { padding-inline-end: 0.25rem; }
+  .pe-rtl-2 { padding-inline-end: 0.5rem; }
+  .pe-rtl-3 { padding-inline-end: 0.75rem; }
+  .pe-rtl-4 { padding-inline-end: 1rem; }
+  
+  /* Primary color utilities */
+  .bg-primary-light {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+  
+  .text-primary {
+    color: var(--primary);
+  }
+  
+  /* Accent color utilities */
+  .bg-accent-light {
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  
+  .text-accent {
+    color: var(--accent);
+  }
+  
+  /* Scrollbar styling for RTL */
+  .scrollbar-rtl::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-rtl::-webkit-scrollbar-track {
+    background: var(--muted);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-rtl::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-rtl::-webkit-scrollbar-thumb:hover {
+    background: var(--foreground);
+  }
+  
+  /* Noon-style gradient */
+  .gradient-noon {
+    background: linear-gradient(135deg, var(--primary) 0%, #00C853 100%);
+  }
+  
+  .gradient-noon-accent {
+    background: linear-gradient(135deg, var(--accent) 0%, #FFB74D 100%);
+  }
+  
+  /* Offer badge style */
+  .badge-offer {
+    @apply bg-accent text-accent-foreground px-2 py-1 rounded-md text-sm font-bold;
+  }
+  
+  /* Product card hover effect */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fade-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 166, 81, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 166, 81, 0);
+  }
+}
+
+.animate-fade-in-rtl {
+  animation: fade-in-rtl 0.3s ease-out;
+}
+
+.animate-slide-in-rtl {
+  animation: slide-in-rtl 0.3s ease-out;
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s infinite;
+}

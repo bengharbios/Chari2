@@ -1,0 +1,1076 @@
+// =============================================
+// منصة التجارة الإلكترونية الشاملة
+// Comprehensive E-Commerce Platform Schema
+// =============================================
+// نسخة MySQL للإنتاج
+// MySQL Production Version
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// المستخدمون والمصادقة
+// Users & Authentication
+// =============================================
+
+model User {
+  id              String    @id @default(cuid())
+  phone           String    @unique
+  email           String?   @unique
+  password        String?
+  name            String?
+  avatar          String?
+  userType        UserType  @default(BUYER)
+  status          UserStatus @default(PENDING_VERIFICATION)
+  language        String    @default("ar")
+  currency        String    @default("SAR")
+  
+  // معلومات التوثيق
+  isPhoneVerified Boolean   @default(false)
+  isEmailVerified Boolean   @default(false)
+  is2FAEnabled    Boolean   @default(false)
+  twoFASecret     String?
+  
+  // التواريخ
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // العلاقات
+  otpCodes        OTPCode[]
+  sessions        Session[]
+  refreshTokens   RefreshToken[]
+  addresses       Address[]
+  buyerProfile    BuyerProfile?
+  merchantProfile MerchantProfile?
+  store           Store?
+  adminProfile    AdminProfile?
+  notifications   Notification[]
+  wishlistItems   WishlistItem[]
+  reviews         Review[]
+  ordersAsBuyer   Order[]     @relation("BuyerOrders")
+  supportTickets  SupportTicket[]
+  auditLogs       AuditLog[]
+  
+  @@index([phone])
+  @@index([userType])
+  @@index([status])
+  @@map("users")
+}
+
+model OTPCode {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  type      OTPType
+  phone     String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  userAgent String?  @db.VarChar(500)
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model AdminProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  role        AdminRole @default(OPERATIONS_MANAGER)
+  permissions String   @db.Text  // JSON string of permissions
+  department  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("admin_profiles")
+}
+
+model BuyerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  totalOrders     Int      @default(0)
+  totalSpent      Float    @default(0)
+  loyaltyPoints   Int      @default(0)
+  defaultAddressId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("buyer_profiles")
+}
+
+model MerchantProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  businessName        String?
+  commercialRegNumber String?
+  taxNumber           String?
+  bankName            String?
+  bankAccountNumber   String?
+  iban                String?
+  verificationStatus  VerificationStatus @default(PENDING)
+  verificationData    String?  @db.Text // JSON for KYB data
+  verificationNotes   String?  @db.Text
+  subscriptionId      String?
+  subscriptionPlan    PlanType @default(FREE)
+  productsLimit       Int      @default(10)
+  commissionRate      Float    @default(0.15)
+  totalSales          Float    @default(0)
+  totalOrders         Int      @default(0)
+  rating              Float    @default(0)
+  totalReviews        Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products            Product[]
+  orders              Order[]  @relation("MerchantOrders")
+  settlements         Settlement[]
+  documents           MerchantDocument[]
+  
+  @@index([verificationStatus])
+  @@index([subscriptionPlan])
+  @@map("merchant_profiles")
+}
+
+model MerchantDocument {
+  id              String   @id @default(cuid())
+  merchantId      String
+  documentType    DocumentType
+  documentUrl     String    @db.VarChar(500)
+  verificationStatus VerificationStatus @default(PENDING)
+  uploadedAt      DateTime @default(now())
+  
+  merchant        MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  
+  @@map("merchant_documents")
+}
+
+model Store {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  storeName           String
+  storeNameEn         String?
+  slug                String   @unique
+  logo                String?  @db.VarChar(500)
+  coverImage          String?  @db.VarChar(500)
+  description         String?  @db.Text
+  descriptionEn       String?  @db.Text
+  theme               String?  @db.Text // JSON for theme settings
+  socialLinks         String?  @db.Text // JSON for social media links
+  verificationStatus  VerificationStatus @default(PENDING)
+  verificationData    String?  @db.Text // JSON for KYB including liveness
+  verificationNotes   String?  @db.Text
+  subscriptionId      String?
+  subscriptionPlan    PlanType @default(FREE)
+  productsLimit       Int      @default(50)
+  commissionRate      Float    @default(0.10)
+  totalSales          Float    @default(0)
+  totalOrders         Int      @default(0)
+  rating              Float    @default(0)
+  totalReviews        Int      @default(0)
+  isFeatured          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products            Product[]
+  orders              Order[]  @relation("StoreOrders")
+  settlements         Settlement[]
+  storeCustomizations StoreCustomization[]
+  
+  @@index([slug])
+  @@index([verificationStatus])
+  @@index([isFeatured])
+  @@map("stores")
+}
+
+model StoreCustomization {
+  id        String   @id @default(cuid())
+  storeId   String
+  key       String
+  value     String   @db.Text // JSON value
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  @@unique([storeId, key])
+  @@map("store_customizations")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  label       String   // منزل، عمل، إلخ
+  recipientName String
+  phone       String
+  country     String   @default("السعودية")
+  city        String
+  district    String?
+  street      String
+  buildingNo  String?
+  floorNo     String?
+  apartmentNo String?
+  postalCode  String?
+  additionalInstructions String? @db.Text
+  isDefault   Boolean  @default(false)
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  
+  @@map("addresses")
+}
+
+// =============================================
+// المنتجات والفئات
+// Products & Categories
+// =============================================
+
+model Category {
+  id          String   @id @default(cuid())
+  nameAr      String
+  nameEn      String?
+  slug        String   @unique
+  description String?  @db.Text
+  image       String?  @db.VarChar(500)
+  icon        String?
+  parentId    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  showInHome  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+  specifications CategorySpecification[]
+  
+  @@index([slug])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model CategorySpecification {
+  id          String   @id @default(cuid())
+  categoryId  String
+  nameAr      String
+  nameEn      String?
+  unit        String?
+  isRequired  Boolean  @default(false)
+  isFilterable Boolean @default(true)
+  sortOrder   Int      @default(0)
+  
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values      ProductSpecification[]
+  
+  @@map("category_specifications")
+}
+
+model Brand {
+  id          String   @id @default(cuid())
+  nameAr      String
+  nameEn      String?
+  slug        String   @unique
+  logo        String?  @db.VarChar(500)
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  products    Product[]
+  
+  @@index([slug])
+  @@index([isActive])
+  @@map("brands")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  sku             String   @unique
+  barcode         String?
+  nameAr          String
+  nameEn          String?
+  slug            String   @unique
+  description     String?  @db.Text
+  descriptionEn   String?  @db.Text
+  highlights      String?  @db.Text // JSON array of key points
+  categoryId      String
+  brandId         String?
+  merchantId      String?  // for independent merchants
+  storeId         String?  // for stores
+  
+  // التسعير
+  basePrice       Float
+  salePrice       Float?
+  costPrice       Float?
+  vatRate         Float    @default(0.15)
+  
+  // المخزون
+  totalStock      Int      @default(0)
+  lowStockThreshold Int    @default(5)
+  
+  // الشحن
+  weight          Float?   // بالكيلوغرام
+  length          Float?   // بالسنتيمتر
+  width           Float?
+  height          Float?
+  shippingCities  String?  @db.Text // JSON array of cities
+  
+  // الفيديو والصور
+  images          String   @db.Text // JSON array of image URLs
+  videoUrl        String?  @db.VarChar(500)
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  metaKeywords    String?  @db.VarChar(500)
+  
+  // الحالة
+  status          ProductStatus @default(DRAFT)
+  isFeatured      Boolean  @default(false)
+  isFlashSale     Boolean  @default(false)
+  flashSaleEndsAt DateTime?
+  
+  // الإحصائيات
+  viewCount       Int      @default(0)
+  saleCount       Int      @default(0)
+  rating          Float    @default(0)
+  totalReviews    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  category        Category @relation(fields: [categoryId], references: [id])
+  brand           Brand?   @relation(fields: [brandId], references: [id])
+  merchant        MerchantProfile? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  store           Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  variants        ProductVariant[]
+  specifications   ProductSpecification[]
+  orderItems      OrderItem[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  homepageProducts HomepageProduct[]
+  cartItems       CartItem[]
+  
+  @@index([slug])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([nameAr])
+  @@map("products")
+}
+
+model ProductVariant {
+  id              String   @id @default(cuid())
+  productId       String
+  sku             String   @unique
+  barcode         String?
+  nameAr          String
+  nameEn          String?
+  
+  // الخصائص المتغيرة
+  color           String?
+  colorCode       String?
+  size            String?
+  packageSize     String?
+  customAttributes String? @db.Text // JSON for other attributes
+  
+  // التسعير والمخزون
+  price           Float
+  salePrice       Float?
+  stock           Int      @default(0)
+  
+  // الصور
+  images          String?  @db.Text // JSON array
+  
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems      OrderItem[]
+  cartItems       CartItem[] @relation("VariantCartItems")
+  
+  @@map("product_variants")
+}
+
+model ProductSpecification {
+  id              String   @id @default(cuid())
+  productId       String
+  specificationId String
+  value           String
+  
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  specification   CategorySpecification @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId, specificationId])
+  @@map("product_specifications")
+}
+
+// =============================================
+// الطلبات والمدفوعات
+// Orders & Payments
+// =============================================
+
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  
+  // العميل
+  buyerId         String
+  shippingAddressId String
+  
+  // البائع
+  merchantId      String?
+  storeId         String?
+  
+  // المبالغ
+  subtotal        Float
+  discountAmount  Float    @default(0)
+  shippingFee     Float    @default(0)
+  vatAmount       Float    @default(0)
+  totalAmount     Float
+  commissionAmount Float   @default(0)
+  
+  // الكوبون
+  couponId        String?
+  couponCode      String?
+  
+  // الحالة
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  shippingStatus  ShippingStatus @default(PENDING)
+  
+  // التواريخ
+  confirmedAt     DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // ملاحظات
+  notes           String?  @db.Text
+  cancellationReason String? @db.Text
+  
+  // العلاقات
+  buyer           User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  merchant        MerchantProfile? @relation("MerchantOrders", fields: [merchantId], references: [id], onDelete: SetNull)
+  store           Store?   @relation("StoreOrders", fields: [storeId], references: [id], onDelete: SetNull)
+  shippingAddress Address  @relation(fields: [shippingAddressId], references: [id])
+  items           OrderItem[]
+  payments        Payment[]
+  tracking        OrderTracking[]
+  
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  productId       String
+  variantId       String?
+  quantity        Int
+  unitPrice       Float
+  totalPrice      Float
+  createdAt       DateTime @default(now())
+  
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id])
+  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  
+  @@map("order_items")
+}
+
+model OrderTracking {
+  id          String   @id @default(cuid())
+  orderId     String
+  status      String
+  description String   @db.Text
+  location    String?
+  createdAt   DateTime @default(now())
+  
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@map("order_tracking")
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  orderId         String
+  amount          Float
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?
+  paymentGateway  String?
+  gatewayResponse String?  @db.Text
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// =============================================
+// السلة وقائمة الأمنيات
+// Cart & Wishlist
+// =============================================
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items     CartItem[]
+  
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant? @relation("VariantCartItems", fields: [variantId], references: [id], onDelete: SetNull)
+  
+  @@unique([cartId, productId, variantId])
+  @@map("cart_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+// =============================================
+// الكوبونات والعروض
+// Coupons & Promotions
+// =============================================
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  type            CouponType
+  value           Float
+  minValue        Float?
+  maxDiscount     Float?
+  usageLimit      Int?
+  usedCount       Int      @default(0)
+  perUserLimit    Int      @default(1)
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean  @default(true)
+  applicableCategories String? @db.Text // JSON array
+  applicableProducts String? @db.Text // JSON array
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+model FlashSale {
+  id          String   @id @default(cuid())
+  nameAr      String
+  nameEn      String?
+  startTime   DateTime
+  endTime     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  items       FlashSaleItem[]
+  
+  @@index([isActive])
+  @@map("flash_sales")
+}
+
+model FlashSaleItem {
+  id          String   @id @default(cuid())
+  flashSaleId String
+  productId   String
+  salePrice   Float
+  quantity    Int
+  soldCount   Int      @default(0)
+  
+  flashSale   FlashSale @relation(fields: [flashSaleId], references: [id], onDelete: Cascade)
+  
+  @@map("flash_sale_items")
+}
+
+// =============================================
+// التقييمات والمراجعات
+// Reviews & Ratings
+// =============================================
+
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  rating      Int      // 1-5
+  title       String?
+  comment     String?  @db.Text
+  images      String?  @db.Text // JSON array
+  isVerified  Boolean  @default(false)
+  isApproved  Boolean  @default(true)
+  helpfulCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("reviews")
+}
+
+// =============================================
+// الاشتراكات والتسويات
+// Subscriptions & Settlements
+// =============================================
+
+model SubscriptionPlan {
+  id                  String   @id @default(cuid())
+  nameAr              String
+  nameEn              String?
+  code                String   @unique
+  priceMonthly        Float
+  priceYearly         Float
+  productsLimit       Int
+  commissionRate      Float
+  features            String   @db.Text // JSON
+  isFeatured          Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  planId          String
+  userId          String
+  storeId         String?
+  startDate       DateTime
+  endDate         DateTime
+  status          SubscriptionStatus @default(ACTIVE)
+  autoRenew       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  @@map("subscriptions")
+}
+
+model Settlement {
+  id              String   @id @default(cuid())
+  merchantId      String?
+  storeId         String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  totalSales      Float
+  totalCommission Float
+  totalRefunds    Float    @default(0)
+  netAmount       Float
+  status          SettlementStatus @default(PENDING)
+  paidAt          DateTime?
+  paymentReference String?
+  reportUrl       String?  @db.VarChar(500)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  merchant        MerchantProfile? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  store           Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  
+  @@index([status])
+  @@map("settlements")
+}
+
+// =============================================
+// الصفحة الرئيسية الديناميكية
+// Dynamic Homepage
+// =============================================
+
+model HomepageSection {
+  id          String   @id @default(cuid())
+  type        SectionType
+  titleAr     String?
+  titleEn     String?
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  config      String?  @db.Text // JSON for section-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  products    HomepageProduct[]
+  banners     HomepageBanner[]
+  
+  @@index([isVisible])
+  @@map("homepage_sections")
+}
+
+model HomepageProduct {
+  id          String   @id @default(cuid())
+  sectionId   String
+  productId   String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  section     HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([sectionId, productId])
+  @@map("homepage_products")
+}
+
+model HomepageBanner {
+  id          String   @id @default(cuid())
+  sectionId   String
+  titleAr     String?
+  titleEn     String?
+  subtitleAr  String?
+  subtitleEn  String?
+  imageAr     String   @db.VarChar(500)
+  imageEn     String?  @db.VarChar(500)
+  linkUrl     String?  @db.VarChar(500)
+  buttonTextAr String?
+  buttonTextEn String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  section     HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  @@map("homepage_banners")
+}
+
+model HomepageSlider {
+  id          String   @id @default(cuid())
+  titleAr     String?
+  titleEn     String?
+  subtitleAr  String?
+  subtitleEn  String?
+  imageAr     String   @db.VarChar(500)
+  imageEn     String?  @db.VarChar(500)
+  linkUrl     String?  @db.VarChar(500)
+  buttonTextAr String?
+  buttonTextEn String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([isActive])
+  @@map("homepage_sliders")
+}
+
+// =============================================
+// الإشعارات والدعم
+// Notifications & Support
+// =============================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String   @db.Text
+  data        String?  @db.Text // JSON
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  subject     String
+  message     String   @db.Text
+  status      TicketStatus @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies     TicketReply[]
+  
+  @@index([status])
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id          String   @id @default(cuid())
+  ticketId    String
+  userId      String?
+  adminId     String?
+  message     String   @db.Text
+  attachments String?  @db.Text // JSON array
+  createdAt   DateTime @default(now())
+  
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  @@map("ticket_replies")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  oldValue    String?  @db.Text
+  newValue    String?  @db.Text
+  ipAddress   String?
+  userAgent   String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([action])
+  @@index([entityType])
+  @@map("audit_logs")
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  type        String   @default("string")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+// =============================================
+// التعدادات (Enums)
+// =============================================
+
+enum UserType {
+  BUYER
+  MERCHANT
+  STORE
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum OTPType {
+  PHONE_VERIFICATION
+  LOGIN
+  PASSWORD_RESET
+  TWO_FA
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  CONTENT_MANAGER
+  OPERATIONS_MANAGER
+  CUSTOMER_SERVICE
+  FINANCE_REVIEWER
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum PlanType {
+  FREE
+  BASIC
+  PROFESSIONAL
+  PREMIUM
+}
+
+enum DocumentType {
+  COMMERCIAL_REGISTRATION
+  TAX_CERTIFICATE
+  ID_CARD_FRONT
+  ID_CARD_BACK
+  SELFIE_FRONT
+  SELFIE_LEFT
+  SELFIE_RIGHT
+  SELFIE_BLINK
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  OUT_OF_STOCK
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  APPLE_PAY
+  MADA
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum ShippingStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum SectionType {
+  HERO_SLIDER
+  FEATURED_DEALS
+  FLASH_SALE
+  MAIN_CATEGORIES
+  BEST_SELLERS
+  NEW_ARRIVALS
+  RECOMMENDED
+  PROMOTIONAL_BANNERS
+  FEATURED_STORES
+  REVIEWS
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  PAYMENT
+  PROMOTION
+  SYSTEM
+  VERIFICATION
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}

@@ -1,0 +1,157 @@
+# =============================================
+# منصة تشارك - Docker Compose للتطوير المحلي
+# Tasharak Platform - Local Development Docker Compose
+# =============================================
+# تشغيل: docker-compose up -d
+# Stop: docker-compose down
+
+version: '3.8'
+
+services:
+  # =============================================
+  # تطبيق Next.js
+  # Next.js Application
+  # =============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    container_name: tasharak-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=mysql://tasharak:tasharak_password@mysql:3306/tasharak_dev
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - JWT_EXPIRES_IN=15m
+      - REFRESH_TOKEN_EXPIRES_IN=7d
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_PUBLIC_APP_NAME=منصة تشارك
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: bun run dev
+    networks:
+      - tasharak-network
+
+  # =============================================
+  # قاعدة بيانات MySQL
+  # MySQL Database
+  # =============================================
+  mysql:
+    image: mysql:8.0
+    container_name: tasharak-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=tasharak_dev
+      - MYSQL_USER=tasharak
+      - MYSQL_PASSWORD=tasharak_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/mysql-migration.sql:/docker-entrypoint-initdb.d/01-migration.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - tasharak-network
+
+  # =============================================
+  # Redis للتخزين المؤقت والجلسات
+  # Redis for Caching and Sessions
+  # =============================================
+  redis:
+    image: redis:7-alpine
+    container_name: tasharak-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - tasharak-network
+
+  # =============================================
+  # Adminer - واجهة إدارة قاعدة البيانات
+  # Database Management UI
+  # =============================================
+  adminer:
+    image: adminer:latest
+    container_name: tasharak-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=mysql
+    depends_on:
+      - mysql
+    networks:
+      - tasharak-network
+
+  # =============================================
+  # MinIO - تخزين S3 محلي للتطوير
+  # Local S3-compatible Storage
+  # =============================================
+  minio:
+    image: minio/minio:latest
+    container_name: tasharak-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - tasharak-network
+
+  # =============================================
+  # MailHog - خادم بريد محلي للتطوير
+  # Local SMTP Server for Development
+  # =============================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: tasharak-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - tasharak-network
+
+# =============================================
+# الشبكات
+# Networks
+# =============================================
+networks:
+  tasharak-network:
+    driver: bridge
+
+# =============================================
+# الأقراص الدائمة
+# Volumes
+# =============================================
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
